@@ -1,8 +1,3 @@
-/* ==================== Required Functions ==================== */
-// This is required to get the initial background-color of an element.
-// The element might have it's bg-color already set before the transition.
-// Transition should continue/start from this color.
-// This will be used only once.
 function getElementBG(elm) {
 	var bg	= getComputedStyle(elm).backgroundColor;
 		bg	= bg.match(/\((.*)\)/)[1];
@@ -14,8 +9,6 @@ function getElementBG(elm) {
 	return bg;
 }
 
-// A function to generate random numbers.
-// Will be needed to generate random RGB value between 0-255.
 function random() {
 	if (arguments.length > 2) {
 		return 0;
@@ -32,7 +25,6 @@ function random() {
 	}
 }
 
-// Generates a random RGB value.
 function generateRGB(min, max) {
 	var min		= min || 0;
 	var max		= min || 255;
@@ -44,9 +36,6 @@ function generateRGB(min, max) {
 	return color;
 }
 
-// Calculates the distance between the RGB values.
-// We need to know the distance between two colors
-// so that we can calculate the increment values for R, G, and B.
 function calculateDistance(colorArray1, colorArray2) {
 	var distance = [];
 	for (var i = 0; i < colorArray1.length; i++) {
@@ -55,8 +44,6 @@ function calculateDistance(colorArray1, colorArray2) {
 	return distance;
 }
 
-// Calculates the increment values for R, G, and B using distance, fps, and duration.
-// This calculation can be made in many different ways.
 function calculateIncrement(distanceArray, fps, duration) {
 	var fps			= fps || 30;
 	var duration	= duration || 1;
@@ -71,8 +58,6 @@ function calculateIncrement(distanceArray, fps, duration) {
 	return increment;
 }
 
-// Converts RGB array [32,64,128] to HEX string #204080
-// It's easier to apply HEX color than RGB color.
 function rgb2hex(colorArray) {
 	var color = [];
 	for (var i = 0; i < colorArray.length; i++) {
@@ -83,9 +68,6 @@ function rgb2hex(colorArray) {
 	return "#" + color.join("");
 }
 
-/* ==================== Setup ==================== */
-// Duration is not what it says. It's a multiplier in the calculateIncrement() function.
-// duration = 1-4, fast-to-slow
 var fps				= 30;
 var duration		= 3;
 var transElement	= document.body;
