@@ -1,0 +1,73 @@
+<html>
+<head>
+    <script src="js/jquery331.js"></script>
+    <style type="text/css">
+        body { overflow: hidden; background-color: white; }
+        .a { font-size: 36px; font-weight: bold; width: 30px; height: 30px; position: absolute; font-family: monospace; }
+    </style>
+</head>
+
+<body>
+
+</body>
+
+<script type="text/javascript">
+ 
+    function buildInitialPlacements(left, maxHeight, offset, message, widthOfWindow) {
+        messageArray = message.split('').reverse(); // we do it this way because very large arrays will shift slowly initially as the array is re-indexed each time, so we reverse the array and use pop instead
+        
+        messageLength = messageArray.length;
+        loopLength = messageLength * 10;
+        for (i=1; i<=loopLength; i+=10) {
+            left +=50;
+            cosR = Math.cos(i * (Math.PI/180)).toFixed(2);
+            top = Math.round(maxHeight * cosR);
+            try {
+                character = messageArray.pop();
+            }
+            catch(e) {
+                // no characters left in the array, set char to space
+                character = " ";
+            }
+            $('body').append('<div data-count="' + i + '" class="a" style="left: ' + (left+widthOfWindow) + '; top: ' + (top+offset) + ';">' + character + '</div>');
+        }
+        animate();
+    }
+
+    function animate(timeOut=50, widthOfWindow) {
+        maxHeight = 100;
+        offset = 200;
+        $('.a').each( function() {
+            newPos = parseInt($(this).data("count"))+10;
+            newPos = (newPos > 720) ? newPos-=720 : newPos;
+            radians = newPos * (Math.PI/180);
+            cosR = Math.cos(radians);
+            
+            oldYPos = $(this).offset().top
+            newYPos = parseInt(cosR * maxHeight + offset);
+            offsetY = oldYPos - newYPos;
+
+            //console.log("CurrentPos: " + (newPos-10) + " New Pos: " + newPos + " Radians: " + radians + " Cos: " + cosR + " oldYPos: " + oldYPos + " newYPos: " + newYPos + " offsetY: " + offsetY);
+            $(this).animate({ top: newYPos, left: "-=20" }, timeOut )
+            $(this).data('count', newPos);            
+            if ($(this).offset().left < 0) { $(this).remove(); };
+        })
+    }
+    
+    
+    $(document).ready( function() {
+        // Init
+        widthOfWindow = parseInt($( window ).width());
+        left=0; maxHeight=100; offset=200;
+        message = "Hello World... Welcome to the amiga scroller demo.     Built by 0ffero 04     12th July 2019     More demos coming soon!";
+        buildInitialPlacements(left, maxHeight, offset, message, widthOfWindow);
+
+        // GO
+        timeOut = 100; // speed of scroller (smooth) - 50 = slightly jittery
+        setInterval( function() {
+            animate(timeOut, widthOfWindow);
+        }, timeOut+1 )
+    })
+</script>
+<script src="js/smoothColour.js"></script>
+</html>
