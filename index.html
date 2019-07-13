@@ -37,6 +37,7 @@
     function animate(timeOut=50, widthOfWindow) {
         maxHeight = 100;
         offset = 200;
+
         $('.a').each( function() {
             newPos = parseInt($(this).data("count"))+10;
             newPos = (newPos > 720) ? newPos-=720 : newPos;
@@ -53,19 +54,27 @@
             if ($(this).offset().left < 0) { $(this).remove(); };
         })
     }
-    
-    
-    $(document).ready( function() {
-        // Init
+
+    function init() {
         widthOfWindow = parseInt($( window ).width());
         left=0; maxHeight=100; offset=200;
         message = "Hello World... Welcome to the amiga scroller demo.     Built by 0ffero 04     12th July 2019     More demos coming soon!";
         buildInitialPlacements(left, maxHeight, offset, message, widthOfWindow);
+    }
+    
+    
+    $(document).ready( function() {
+        // Init
+        init();
 
         // GO
         timeOut = 100; // speed of scroller (smooth) - 50 = slightly jittery
         setInterval( function() {
-            animate(timeOut, widthOfWindow);
+            if ($('.a').length==0) {
+                init(); // this isn't very pretty. i should be killing the old settimeout then creating a new one... maybe later ;)
+            } else {
+                animate(timeOut, widthOfWindow);
+            }
         }, timeOut+1 )
     })
 </script>
