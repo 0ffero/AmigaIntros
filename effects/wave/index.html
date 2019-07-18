@@ -120,7 +120,7 @@
             fontNumber = 0;
             rotateFontTimer = setInterval( function() {
                 fontName = getFontList(fontNumber);
-                $('.fontImg').css("background-image", "url('" + fontName + ".png')");
+                $('.fontImg').css("background-image", "url(../../fonts/'" + fontName + ".png')");
                 fontNumber = ( fontNumber < 2 ) ? fontNumber+1 : 0;
             }, 333)
         } else {
