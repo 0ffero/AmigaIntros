@@ -1,0 +1,187 @@
+<html>
+<head>
+<style type="text/css">
+	body { background-color: black; }
+	canvas { padding: 0; margin: auto; display: block; }
+</style>
+<script type="text/javascript">
+	var fontImg = new Image();
+	fontImg.src = '../../fonts/CapsBlueSilverSingleLine32x32.png';
+	var msg = "Welcome to the circle scroller... this one's done in javascript and canvas     Built by 0ffero 04     17-07-2019     More demos coming soon :)"
+	// add initial padding to the message (basically 16 spaces)
+	for (i=1; i<=16; i++) { msg = " " + msg; }
+	
+	function buildLookupTable() {
+        ASCIILookup = {};
+        extraChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890.,!?'\":&-+()/ ";
+        extraCharsArray = extraChars.split(''); extraChars='';
+        extraCharsLength = extraCharsArray.length;
+        for (i=0; i<extraCharsLength; i++) {
+            currentChar = extraCharsArray[i];
+            ASCIILookup[currentChar] = i;
+        }
+        return ASCIILookup;
+    }
+	ASCIILookup = buildLookupTable();
+</script>
+</head>
+
+<body onload="init()">
+	<canvas id="myCanvas" width="900" height="900"></canvas>
+	
+	<script type="text/javascript">	
+		var pathArray = [];
+		var pathMaxLength = 320;
+		var maxCharacters = 16;
+		var lettersRepeatOnPathEvery = pathMaxLength/maxCharacters;
+		var imgPositions = [];
+		var animID;
+		var wh = 32;
+		var fontScale = 3;
+		var fontPosOffset = wh * fontScale / 2;
+		var canvasW = 900;
+		var canvasH = 900;
+		var forwards = true;
+		var pathOffset = pathMaxLength / 4;
+
+		if (window.innerWidth<canvasW) {
+			// canvas is too big for the screen
+		}
+
+		function fontify(char) {
+			char = char.toUpperCase();
+			bgImageOffset = ASCIILookup[char];
+			if (bgImageOffset>=0 && bgImageOffset<49) { // character within range
+				bgImageOffset = 32 * bgImageOffset;
+			} else {
+				bgImageOffset = "none";
+			}
+			return bgImageOffset;
+		}
+
+		function getLetter() {
+			currentLetter = msg.slice(0, 1);
+			msg = msg.slice(1) + currentLetter;
+			return currentLetter;
+		}
+
+		function init() {
+			maxHeight = window.innerHeight;
+			var c = document.getElementById("myCanvas");
+			var ctx = c.getContext("2d");
+			var showPath = false;
+			
+			loopCounter = 0;
+			character = 0;
+			
+
+			// define circle constants vars
+			var points = pathMaxLength-1; // originally had 180º in here so that every point spacing of the path 
+										  // was 2º, but i decided on 16 character positions. So, to join the
+										  // two loops together it was easier to check for every 10th point
+			var step = 2 * Math.PI/points;
+			var circleCenterX = canvasW / 2; 
+			var circleCenterY = canvasH /2;
+			var radius = circleCenterY - fontPosOffset;
+			
+			
+			// this is the path the letters will follow
+			ctx.strokeStyle = 'white';
+			ctx.beginPath();
+			for ( var angle=0; angle<(2*Math.PI-step); angle+=step) {
+				var x = circleCenterX + radius * Math.cos(angle);
+				var y = circleCenterY - radius * Math.sin(angle);
+				pathArray.push([ x.toFixed(2), y.toFixed(2) ])
+				if ( loopCounter%lettersRepeatOnPathEvery==0 ) {
+					thisPosition = loopCounter/lettersRepeatOnPathEvery;
+					currentLetter = getLetter();
+					imgPositions.push([ thisPosition, loopCounter, currentLetter ]);
+					bgImageOffset = fontify(currentLetter);
+					if (bgImageOffset!="none") {
+						ctx.drawImage(fontImg, bgImageOffset, 0, wh, wh, x-fontPosOffset, y-fontPosOffset, (wh*fontScale), (wh*fontScale));
+					} else {
+						ctx.rect(x-fontPosOffset, y-fontPosOffset, wh*fontScale, wh*fontScale);
+					}
+				}
+				if (showPath==true) {
+					ctx.lineTo(x,y);
+				}
+				loopCounter++;
+			}
+			ctx.closePath();
+			ctx.stroke();
+			pathEndArray = pathArray.splice(0, pathOffset)
+			pathArray = pathArray.concat(pathEndArray);
+			mainLoop()
+		}
+		
+		function mainLoop() {
+			c = document.getElementById("myCanvas");
+			ctx = c.getContext("2d");
+			// clear the canvas
+			ctx.clearRect(0, 0, c.width, c.height);
+
+			for (i=0; i<imgPositions.length; i++) {	//for each of the characters visible on the screen			
+				letterNumber = imgPositions[i][0];
+				currentPosition = imgPositions[i][1];
+				currentLetter = imgPositions[i][2];
+				if (forwards == false) { // are we playing the animation forwards
+					newPosition = currentPosition + 1;
+					min = 0; max = pathArray.length-1;
+					if (newPosition<max) {
+						nextPosition = pathArray[newPosition];
+					} else {
+						newPosition=0;
+						nextPosition = pathArray[newPosition];
+					}
+					// set opacity of letter based on path position
+					pathRemaining = max - newPosition;
+					if (pathRemaining<50) {
+						ctx.globalAlpha = pathRemaining/50;
+					} else if (newPosition<50) {
+						ctx.globalAlpha = newPosition/50;
+					} else {
+						ctx.globalAlpha = 1;
+					}
+				} else { // or backwards
+					newPosition = currentPosition - 1;
+					min = 0; max = pathArray.length-1;
+					if (newPosition>min) {
+						nextPosition = pathArray[newPosition];
+					} else {
+						newPosition = max;
+						nextPosition = pathArray[newPosition];
+					}
+					pathRemaining = newPosition;
+					if (pathRemaining<50) {
+						ctx.globalAlpha = pathRemaining/50;
+					} else if (max-newPosition<50) {
+						ctx.globalAlpha = (max-newPosition)/50;
+					} else {
+						ctx.globalAlpha = 1;
+					}
+				}
+				
+				if (pathRemaining==1) {
+					currentLetter = getLetter();
+					imgPositions[i][2] = currentLetter;
+				}
+				newX = nextPosition[0]; newY = nextPosition[1];
+				bgImageOffset = fontify(currentLetter);
+				if (bgImageOffset!="none") {
+					ctx.drawImage(fontImg, bgImageOffset, 0, wh, wh, newX-fontPosOffset, newY-fontPosOffset, (wh*fontScale), (wh*fontScale));
+				} else {
+					ctx.rect(newX-fontPosOffset, newY-fontPosOffset, wh*fontScale, wh*fontScale);
+				}
+
+				imgPositions[i][1] = newPosition;
+			}
+			animID = requestAnimationFrame(mainLoop);
+		}
+		
+		function stopAnimation() {
+			cancelAnimationFrame(animID);
+		}
+	</script>
+</body>
+</html>

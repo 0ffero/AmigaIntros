@@ -1,0 +1,184 @@
+<html>
+<head>
+    <script src="../../js/jquery331.js"></script>
+    <style type="text/css">
+        audio { display: none; }
+        body { overflow: hidden; background-color: white; font-family: monospace; font-size: 24; font-weight: bold; }
+        .a { font-size: 32px; font-weight: bold; position: absolute; background-size: cover; padding: 0px; margin: 0px 10px; }
+        .popUp { font-size: 32px; color: white; width: 100%; text-align: center; text-shadow: 2px 2px 5px black; float: left; position: absolute; bottom: 10px; display: none; }
+    </style>
+</head>
+
+<body>
+    <span>1, 2 & 3 = Select Font</span><br/>
+    <span>0 = Rotate Through Available Fonts</span>
+    <div class="popUp">Information In Here</div>
+    <audio id="audioPlayer" preload="true" controls src="../../music/Angels_Intro_Remastered.mp3" type=""></audio>
+</body>
+
+<script type="text/javascript">
+    
+    function animateWaveScroller(timeOut=50, widthOfWindow, maxHeight, offset) {
+        xSpeed = 20;
+        $('.a').each( function() {
+            newPos = parseInt($(this).data("count"))+10;
+            newPos = (newPos > 720) ? newPos-=720 : newPos;
+            radians = newPos * (Math.PI/180);
+            cosR = Math.cos(radians);
+            
+            oldYPos = parseInt($(this).offset().top)
+            newYPos = parseInt(cosR * maxHeight + offset);
+            offsetY = oldYPos - newYPos;
+            oldXPos = parseInt($(this).offset().left)
+            newXPos = oldXPos - xSpeed;
+
+            $(this).animate({ top: newYPos, left: "-="+xSpeed }, timeOut )
+            $(this).data('count', newPos);            
+            if ($(this).offset().left < -96) { $(this).remove(); };
+        })
+    }
+ 
+    function buildInitialPlacements(left, maxHeight, offset, message, widthOfWindow, scale, wh, selectedFont) {
+        messageArray = message.split('').reverse(); // we do it this way because very large arrays will shift slowly initially as the array is re-indexed each time, so we reverse the array and use pop instead
+        messageLength = messageArray.length;
+        loopLength = messageLength * 10;
+        ASCIILookup = buildLookupTable();
+        
+        for (i=1; i<=loopLength; i+=10) {
+            left +=wh; left+=10;
+            cosR = Math.cos(i * (Math.PI/180)).toFixed(2);
+            top = Math.round(maxHeight * cosR);
+            try {
+                character = messageArray.pop();
+            }
+            catch(e) {
+                // no characters left in the array, set char to space
+                character = " ";
+            }
+            bgImageOffset = fontify(character, ASCIILookup, scale);
+            if (bgImageOffset!="none") {
+                $('body').append('<div data-count="' + i + '" data-char="' + character + '" class="a fontImg" style="left: ' + (left+widthOfWindow) + '; top: ' + (top+offset) + '; background-position-x: -' + bgImageOffset + 'px"></div>');
+            } else {
+                $('body').append('<div data-count="' + i + '" data-char="' + character + '" class="a" style="left: ' + (left+widthOfWindow) + '; top: ' + (top+offset) + ';"></div>');
+            }
+        }
+        
+        $('.fontImg').css('background-image', "url('../../fonts/" + selectedFont + ".png')");
+        $('.a').css({ width: wh, height: wh, "font-size": wh })
+        
+        animateWaveScroller(50, widthOfWindow, maxHeight, offset);
+    }
+
+    function buildLookupTable() {
+        ASCIILookup = {};
+        extraChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890.,!?'\":&-+()/ ";
+        extraCharsArray = extraChars.split(''); extraChars='';
+        extraCharsLength = extraCharsArray.length;
+        for (i=0; i<extraCharsLength; i++) {
+            currentChar = extraCharsArray[i];
+            ASCIILookup[currentChar] = i;
+        }
+        return ASCIILookup;
+    }
+
+    function checkForAlternative(thisChar) {
+        console.log("Looking for alternative.");
+    }
+
+    function getFontList(specificFont=-1) {
+        fontlist = [ "CapsBlueSilverSingleLine32x32", "CapsGreenTallSingleLine32x32", "CapsGoldSingleLine32x32" ];
+        if (specificFont>=0) {
+            font = fontlist[specificFont];
+        } else {
+            font = fontlist;
+        }
+        return font;
+    }
+
+    function init(scale, wh, selectedFont) {
+        widthOfWindow = parseInt($( window ).width());
+        left=0; maxHeight=500; offset=parseInt($(window).height())/2; if (maxHeight>offset) { maxHeight=offset; }
+        message = "Hello World... Welcome to the amiga scroller demo javascript & HTML5 edition (no canvas) :)     Built by 0ffero 04     12th July 2019     More demos coming soon!";
+        buildInitialPlacements(left, maxHeight, offset, message, widthOfWindow, scale, wh, selectedFont);
+    }
+
+    // replace the message with selected font
+    function fontify(char, ASCIILookup, scale) {
+        char = char.toUpperCase();
+        bgImageOffset = ASCIILookup[char];
+        if (bgImageOffset>=0 && bgImageOffset<49) { // character within range
+            bgImageOffset = 32 * scale * bgImageOffset;
+        } else {
+            bgImageOffset = "none";
+        }
+        return bgImageOffset;
+    }
+
+    function rotateFont() {
+        if (typeof window.rotateFontTimer=="undefined") {
+            console.log("Starting font rotation");
+            fontNumber = 0;
+            rotateFontTimer = setInterval( function() {
+                fontName = getFontList(fontNumber);
+                $('.fontImg').css("background-image", "url('" + fontName + ".png')");
+                fontNumber = ( fontNumber < 2 ) ? fontNumber+1 : 0;
+            }, 333)
+        } else {
+            console.log("Stopping font rotation");
+            clearInterval(rotateFontTimer);
+            delete rotateFontTimer;
+        }
+    }
+    
+    $(document).ready( function() {
+        // set up scaling of images
+        scale = 3; charSize = 32; wh = scale * charSize;
+
+        fonts = getFontList();
+        selectedFont = fonts[0];
+
+        // Init
+        init(scale, wh, selectedFont);
+
+        // GO
+        timeOut = 1000/10; // speed of scroller
+        setInterval( function() {
+            if ($('.a').length==0) {
+                init(scale, wh, selectedFont); // this isn't very pretty. i should be killing the old setInterval then creating a new one... maybe later ;)
+            } else {
+                animateWaveScroller(timeOut, widthOfWindow, maxHeight, offset);
+            }
+        }, timeOut+1 )
+
+        $("audio").on( "canplay", function() {
+            audioPlayer = document.getElementById('audioPlayer'); const playPromise = audioPlayer.play(); audioPlayer.volume = 0.3; 
+            if (playPromise !== null){
+                playPromise.catch(() => { audioPlayer.play(); })
+            }
+        });
+        $("audio").on( "ended",   function() { audioPlayer = document.getElementById('audioPlayer'); audioPlayer.play(); });
+        
+        $("body").keypress(function(char){ 
+            found = false;
+            switch (char.key) {
+                case '1': $('.fontImg').css("background-image", "url('../../fonts/CapsBlueSilverSingleLine32x32.png')"); found=true; fontName="All Caps Blue/Silver"; break;
+                case '2': $('.fontImg').css("background-image", "url('../../fonts/CapsGreenTallSingleLine32x32.png')"); found=true; fontName="All Caps Tall Green"; break;
+                case '3': $('.fontImg').css("background-image", "url('../../fonts/CapsGoldSingleLine32x32.png')"); found=true; fontName="All Caps Gold Flame"; break;
+                case '0': rotateFont(); found=true; fontName="Rotating fonts"; break;
+            }
+            if (found==true) {
+                popUpDisplay = $(".popUp").css("display");
+                if (popUpDisplay=="none") {
+                    $('.popUp').html("Using " + fontName).fadeIn(666).delay(1000).fadeOut(666);
+                } else {
+                    $('.popUp').stop().fadeOut(333, function() {
+                        $('.popUp').html("Using " + fontName).fadeIn(666).delay(1000).fadeOut(666);
+                    })
+                }
+            }
+        });
+
+    })
+</script>
+<script src="../../js/smoothColour.js"></script>
+</html>

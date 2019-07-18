@@ -1,4 +1,3 @@
-/* https://jsfiddle.net/akinuri/dd2p9mgL/ */
 function getElementBG(elm) {
 	var bg	= getComputedStyle(elm).backgroundColor;
 		bg	= bg.match(/\((.*)\)/)[1];
