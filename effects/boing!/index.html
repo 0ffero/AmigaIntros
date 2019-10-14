@@ -1,28 +1,49 @@
+<!--
+    ████  █████ █████ █   █ █████   ██
+    █   █ █   █   █   ██  █ █       ██
+    ████  █   █   █   █ █ █ █  ██   ██
+    █   █ █   █   █   █  ██ █   █ 
+    ████  █████ █████ █   █ █████   ██
+    
+           AMIGA DEMO REMAKE
+                  BY
+              0ffero 04
+      Work Began Here 20191013-0317
+-->
 <html>
 <head>
     <title>Amiga Demo: Boing! 3DGL - HTML5 Canvas</title>
     <script src="js/frameworks/three.min.js"></script>
     <script src="js/frameworks/howler.min.js"></script>
+    <script src="js/frameworks/howler.spatial.js"></script>
 
     <style type="text/css">
         * { margin: 0; padding: 0; }
         body { background-color: black; }
         canvas { padding: 0; margin: auto; display: block; border: 1px solid white; }
+        #infoContainer { width: 500px; padding: 3px 3px; margin: 0px 4px; background-color: black; font-size: 18px; font-weight: bold; color: white; border: 1px solid white; position: absolute; text-align: center; opacity: 0.75; }
     </style>
 </head>
-<body>
+<body onkeypress="configChange(event)">
+    <div id="infoContainer">Press <span style="color: yellow">S</span> to switch sound ON and OFF</div>
 </body>
 
 <script type="text/javascript">
+
+infoC = document.getElementById('infoContainer');
+infoC.style.left = (window.innerWidth / 2) - (0.5 * infoC.offsetWidth);
+
+
 var direction = 1;
+var bounds = 3
 var multiplier = 100;
 var timer = 0;
 var gravity = 0.5;
 var ballForce = ballForceMax = 25;
-var floorY = 0.5*multiplier;
-var soundsEnabled = true;
+var floorY = 0.5 * multiplier;
+var soundsEnabled = false;
 var realisticLighting = true;
-rendererW = 1280; rendererH = 960;
+rendererW = 320*4; rendererH = 320*3;
 
 var mns = musicAndSfx = {
     sfx_boing: { id: 'sfx_boing', src: ['sounds/bounceLow.m4a'], audio: null, loop: false, volume: 0.3 }
@@ -34,7 +55,7 @@ sound.audio = new Howl({src, volume: sound.volume });
 
 // RENDERER
     var renderer = new THREE.WebGLRenderer( { antialias: true } );
-    renderer.setSize( rendererW, rendererH );
+    renderer.setSize(rendererW, rendererH);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.gammaInput = true;
@@ -120,8 +141,8 @@ function animateBall() {
     ballMesh.position.x += 0.05 * direction * multiplier;
 
     // MOVE BALL
-    ballForce -= gravity
-    if (ballMesh.position.x < -3*multiplier || ballMesh.position.x > 3*multiplier) { direction *=-1; playSound(); }
+    ballForce -= gravity;
+    if (ballMesh.position.x < -bounds*multiplier || ballMesh.position.x > bounds*multiplier) { direction *=-1; playSound(); }
 
     ballY  = ballMesh.position.y;
     if (ballY>floorY) {
@@ -137,7 +158,21 @@ function animateBall() {
 
 }
 
+function configChange(event) {
+    switch (event.code) {
+        case 'KeyS': soundsEnabled = soundsEnabled == false ? true : false; break;
+    }
+}
+
+function stereoSound() {
+    ballCurrentX = ballMesh.position.x/multiplier;
+    if (ballCurrentX>3 || ballCurrentX<3) { ballCurrentX= ~~ballCurrentX; }
+    pan = ballCurrentX/bounds;
+    mns.sfx_boing.audio.stereo(pan);
+}
+
 function playSound() {
+    stereoSound();
     if (soundsEnabled==true) {
         mns.sfx_boing.audio.play();
     }
