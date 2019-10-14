@@ -75,7 +75,7 @@ sound.audio = new Howl({src, volume: sound.volume });
     containerTexture.anisotropy = 4;
     containerTexture.wrapS = THREE.RepeatWrapping;
     containerTexture.wrapT = THREE.RepeatWrapping;
-    containerTexture.repeat.set( 7, 10 );
+    containerTexture.repeat.set( 10, 10 );
 
 //SCENE
     var scene = new THREE.Scene();
@@ -101,7 +101,7 @@ sound.audio = new Howl({src, volume: sound.volume });
         lightP.position.set(0, 2*multiplier, 6*multiplier);
         lightP.lookAt(0,0,0);
         lightP.castShadow=true;
-        lightP.shadow.camera.far=60*multiplier;
+        lightP.shadow.camera.far = 60 * multiplier;
         lightP.shadow.mapSize.width = 1024;
         lightP.shadow.mapSize.height = 1024;
         scene.add(lightP);
@@ -119,10 +119,10 @@ sound.audio = new Howl({src, volume: sound.volume });
 
     // CONTAINER
     wdh = ((camera.position.z/multiplier) + 1) * multiplier;
-    containerGeometry = new THREE.BoxGeometry( wdh*0.7, wdh, wdh);
+    containerGeometry = new THREE.BoxGeometry( wdh*0.7, wdh*0.5, wdh);
     containerMaterial = new THREE.MeshStandardMaterial( { map: containerTexture, side: THREE.BackSide })
     var containerMesh = new THREE.Mesh(containerGeometry, containerMaterial);
-    containerMesh.position.y = 5*multiplier;
+    containerMesh.position.y = 2*multiplier;
     containerMesh.receiveShadow = true;
     scene.add(containerMesh);
 
@@ -150,7 +150,7 @@ function animateBall() {
     ballY  = ballMesh.position.y;
     if (ballY>floorY) {
         yOff = ballForce * gravity;
-        ballForce -= 1/200;
+        ballForce -= 1/(2*multiplier);
         ballY += yOff;
         ballMesh.position.y = ballY;
     } else {
@@ -162,7 +162,6 @@ function animateBall() {
 }
 
 function configChange(event) {
-    console.log(event);
     switch (event.code) {
         case 'KeyS': soundsEnabled = soundsEnabled == false ? true : false; break;
     }
@@ -170,14 +169,14 @@ function configChange(event) {
 
 function stereoSound() {
     ballCurrentX = ballMesh.position.x/multiplier;
-    if (ballCurrentX>3 || ballCurrentX<3) { ballCurrentX= ~~ballCurrentX; }
+    if (ballCurrentX>3 || ballCurrentX<-3) { ballCurrentX= ~~ballCurrentX; }
     pan = ballCurrentX/bounds;
     mns.sfx_boing.audio.stereo(pan);
 }
 
 function playSound() {
-    stereoSound();
     if (soundsEnabled==true) {
+        stereoSound();
         mns.sfx_boing.audio.play();
     }
 }
