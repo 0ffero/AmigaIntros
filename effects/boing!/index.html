@@ -1,0 +1,150 @@
+<html>
+<head>
+    <title>Science - SolarSystem3D - HTML5 Canvas</title>
+    <script src="js/frameworks/three.min.js"></script>
+    <script src="js/frameworks/howler.min.js"></script>
+
+    <style type="text/css">
+        * { margin: 0; padding: 0; }
+        body { background-color: black; }
+        canvas { padding: 0; margin: auto; display: block; border: 1px solid white; }
+    </style>
+</head>
+<body>
+</body>
+
+<script type="text/javascript">
+var direction = 1;
+var multiplier = 100;
+var timer = 0;
+var gravity = 0.5;
+var ballForce = ballForceMax = 25;
+var floorY = 0.5*multiplier;
+var soundsEnabled = false;
+var realisticLighting = true;
+rendererW = 1280; rendererH = 960;
+
+var mns = musicAndSfx = {
+    sfx_boing: { id: 'sfx_boing', src: ['sounds/bounceLow.m4a'], audio: null, loop: false, volume: 0.3 }
+}
+
+sound = mns.sfx_boing;
+src = sound.src;
+sound.audio = new Howl({src, volume: sound.volume });
+
+// RENDERER
+    var renderer = new THREE.WebGLRenderer( { antialias: true } );
+    renderer.setSize( rendererW, rendererH );
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.gammaInput = true;
+    renderer.gammaOutput = true;
+    document.body.appendChild( renderer.domElement );
+
+// TEXTURES
+    textureLoader = new THREE.TextureLoader();
+    ballTexture = textureLoader.load("textures/ball.png");
+    ballTexture.anisotropy = 4;
+    ballTexture.wrapS = THREE.RepeatWrapping;
+    ballTexture.wrapT = THREE.RepeatWrapping;
+    ballTexture.repeat.set( 10, 5 );
+
+    containerTexture = textureLoader.load("textures/container.png");
+    containerTexture.anisotropy = 4;
+    containerTexture.wrapS = THREE.RepeatWrapping;
+    containerTexture.wrapT = THREE.RepeatWrapping;
+    containerTexture.repeat.set( 7, 10 );
+
+//SCENE
+    var scene = new THREE.Scene();
+
+// CAMERAS
+    var camera = new THREE.PerspectiveCamera( 35, rendererW / rendererH, 0.1, 50*multiplier );
+    camera.position.x = 0*multiplier; camera.position.y = 2*multiplier; camera.position.z = 10*multiplier;
+    lookAt = new THREE.Vector3(0, 2*multiplier, 1*multiplier);
+    camera.castShadow = true;
+    camera.lookAt(lookAt);
+    scene.add(camera);
+
+    var ballCam = new THREE.CubeCamera(0.1, 100*multiplier, 512);
+    scene.add(ballCam);
+
+
+// LIGHTS
+    intensity = 1;
+    lightA = new THREE.AmbientLight( 0xffffff, 0.9 );
+    scene.add(lightA);
+    if (realisticLighting==true) {
+        lightP = new THREE.PointLight( 0xFFFFFF, 1, 60*multiplier );
+        lightP.position.set(0, 2*multiplier, 6*multiplier);
+        lightP.lookAt(0,0,0);
+        lightP.castShadow=true;
+        lightP.shadow.camera.far=60*multiplier;
+        scene.add(lightP);
+    }
+
+// GEOMETRIES
+    // BALL
+    ballGeometry = new THREE.SphereGeometry( 1*multiplier, 64, 64 );
+    ballMaterial = new THREE.MeshPhongMaterial( { color: 0xFFFFFF, map: ballTexture, shininess: 200, specular: 0x111111, reflectivity: 0.5, envMap: ballCam.renderTarget.texture } );
+    var ballMesh = new THREE.Mesh(ballGeometry, ballMaterial);
+    ballMesh.castShadow=true
+    ballMesh.position.y = 0.2*multiplier;
+    ballMesh.rotation.z = -23.44 *(Math.PI/180);
+    scene.add(ballMesh);
+
+    // CONTAINER
+    wdh = ((camera.position.z/multiplier) + 1) * multiplier;
+    containerGeometry = new THREE.BoxGeometry( wdh*0.7, wdh, wdh);
+    containerMaterial = new THREE.MeshStandardMaterial( { map: containerTexture, side: THREE.BackSide })
+    var containerMesh = new THREE.Mesh(containerGeometry, containerMaterial);
+    containerMesh.position.y = 5*multiplier;
+    containerMesh.receiveShadow = true;
+    scene.add(containerMesh);
+
+
+function mainLoop() {
+    requestAnimationFrame(mainLoop);
+    
+    ballMesh.visible = false;
+    ballCam.position.copy(ballMesh.position);
+    ballCam.update(renderer, scene);
+    ballMesh.visible = true;
+
+    renderer.render(scene, camera);
+    animateBall();
+}
+
+function animateBall() {
+    ballMesh.rotation.y += 0.5 * (Math.PI/180) * direction;
+    ballMesh.position.x += 0.05 * direction * multiplier;
+
+    // MOVE BALL
+    ballForce -= gravity
+    if (ballMesh.position.x < -3*multiplier || ballMesh.position.x > 3*multiplier) { direction *=-1; playSound(); }
+
+    ballY  = ballMesh.position.y;
+    if (ballY>floorY) {
+        yOff = ballForce * gravity;
+        ballForce -= 1/200;
+        ballY += yOff;
+        ballMesh.position.y = ballY;
+    } else {
+        playSound();
+        ballMesh.position.y = floorY+1;
+        ballForce = ballForceMax;
+    }
+
+}
+
+function playSound() {
+    if (soundsEnabled==true) {
+        mns.sfx_boing.audio.play();
+    }
+}
+
+requestAnimationFrame(mainLoop);
+
+</script>
+
+</html>
