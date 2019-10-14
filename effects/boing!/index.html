@@ -4,7 +4,7 @@
     ████  █   █   █   █ █ █ █  ██   ██
     █   █ █   █   █   █  ██ █   █ 
     ████  █████ █████ █   █ █████   ██
-    
+
            AMIGA DEMO REMAKE
                   BY
               0ffero 04
@@ -24,12 +24,13 @@
         #infoContainer { width: 500px; padding: 3px 3px; margin: 0px 4px; background-color: black; font-size: 18px; font-weight: bold; color: white; border: 1px solid white; position: absolute; text-align: center; opacity: 0.75; }
     </style>
 </head>
-<body onkeypress="configChange(event)">
+<body>
     <div id="infoContainer">Press <span style="color: yellow">S</span> to switch sound ON and OFF</div>
 </body>
 
 <script type="text/javascript">
 
+document.addEventListener('keydown', configChange);
 infoC = document.getElementById('infoContainer');
 infoC.style.left = (window.innerWidth / 2) - (0.5 * infoC.offsetWidth);
 
@@ -101,6 +102,9 @@ sound.audio = new Howl({src, volume: sound.volume });
         lightP.lookAt(0,0,0);
         lightP.castShadow=true;
         lightP.shadow.camera.far=60*multiplier;
+        lightP.shadow.mapSize.width = 1024;
+        lightP.shadow.mapSize.height = 1024;
+        //light.shadow.camera.near = 0.5;
         scene.add(lightP);
     }
 
@@ -159,6 +163,7 @@ function animateBall() {
 }
 
 function configChange(event) {
+    console.log(event);
     switch (event.code) {
         case 'KeyS': soundsEnabled = soundsEnabled == false ? true : false; break;
     }
