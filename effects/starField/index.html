@@ -1,0 +1,150 @@
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>3D Starfield in HTML5 Canvas</title>
+    <style type="text/css">
+        body { background-color: black; overflow: hidden; }
+        canvas {  padding: 0; margin: none; display: block; z-index: 0; }
+        #inputTable { position: absolute; left: 10px; top: 10px; z-index: 5; }
+        table { color: white; }
+        td { text-align: center; vertical-align: middle; width: 50px; height: 50px; }
+        .y { color: yellow; font-weight: bold;}
+    </style>
+    <script type='text/javascript'>
+        var max_depth = 32; // this is basically the speed of the stars 16 = fast, 32 = normal, 48 = slow - now using starVelocity var
+        var cull_amount = 1; // we can control the amount of visible stars by increasing this number
+        var density = 100;
+        var camera = [];
+        var cameraCentre;
+        var cameraDest = [0, 0];
+        var bounceBack = true; var done = false;
+        var transposeBy = [0, 0]
+        var fps = 60;
+        var frameCount = 0;
+        var starVelocity = 1/10; // 0.1 = slow, 1 = Hyperspeed - Numbers larger than 2 start at ludicrous speed and only gets more mental
+ 
+        var animID;
+
+        var c, cW, cH, ctx, centreX, centreY;
+        var stars = new Array(1024);
+ 
+        function buildStars() {
+            for( i=0; i<stars.length; i++ ) {
+                stars[i] = { x: randomNumber(-density,density), y: randomNumber(-density,density), z: randomNumber(1,max_depth*cull_amount) }
+            }
+        }
+ 
+        function cameraBounceBack() {
+            destX = cameraCentre[0]; destY = cameraCentre[1];
+            cameraDest = [ destX, destY ]
+            done=true;
+            moveCameraXY();
+        }
+
+        function init() {
+            c = document.getElementById("3dstars");
+            c.width = window.innerWidth;
+            c.height = window.innerHeight;
+            cW = c.width; cH = c.height;
+            centreX = cW / 2; centreY = cH / 2;
+            cameraCentre = [centreX, centreY];
+            camera = [centreX, centreY];
+            ctx = c.getContext("2d");
+            buildStars();
+            requestAnimationFrame(mainLoop);
+            document.body.addEventListener('keydown', function (char) {
+                found = false;
+                key = char.key;
+                // I should really build a transform matrix for this...
+                switch (key) {
+                    case "7": destX = cW*0.25;         destY = cH*0.25;         found = true; break;
+                    case "4": destX = cW*0.25;         destY = cameraCentre[1]; found = true; break;
+                    case "1": destX = cW*0.25;         destY = cH*0.75;         found = true; break;
+                    
+                    case "8": destX = cameraCentre[0]; destY = cH*0.25;         found = true; break;
+                    case "5": destX = cameraCentre[0]; destY = cameraCentre[1]; found = true; break;
+                    case "2": destX = cameraCentre[0]; destY = cH*0.75;         found = true; break; 
+
+                    case "9": destX = cW*0.75;         destY = cH*0.25;         found = true; break;
+                    case "6": destX = cW*0.75;         destY = cameraCentre[1]; found = true; break;
+                    case "3": destX = cW*0.75;         destY = cH*0.75;         found = true; break;
+                    
+                }
+
+                if (found==true) {
+                    cameraDest = [ destX, destY ]
+                    moveCameraXY();
+                }
+            })
+        }
+ 
+        function mainLoop() { 
+            ctx.clearRect(0, 0, cW, cH);
+ 
+            for( i=0; i<stars.length; i++ ) {
+                stars[i].z -= starVelocity;
+ 
+                if( stars[i].z <= 0 ) {
+                    stars[i].x = randomNumber(-density,density); stars[i].y = randomNumber(-density,density); stars[i].z = max_depth*cull_amount;
+                }
+ 
+                var transform  = 128.0 / stars[i].z;
+                // position stars in 3D space
+                px = stars[i].x * transform + centreX;
+                py = stars[i].y * transform + centreY;
+ 
+                if( px>=0 && px<=cW && py>=0 && py<=cH ) {
+                    size = (1 - stars[i].z / max_depth) * 5;
+                    colour = parseInt((1 - stars[i].z / max_depth) * 255);
+                    ctx.fillStyle = "rgb(" + colour + "," + colour + "," + colour + ")";
+                    ctx.fillRect(px,py,size,size);
+                }
+            }
+            requestAnimationFrame(mainLoop);
+        }
+
+        function moveCameraXY(animLength = 1) {
+            destX = cameraDest[0]; offsetX = camera[0] - destX;
+            destY = cameraDest[1]; offsetY = camera[1] - destY;
+            if ((transposeBy[0]==0 && transposeBy[1]==0) && (offsetX!=0 || offsetY!=0)) {
+                if (offsetX!=0) { transposeX = offsetX/fps/animLength; } else { transposeX=0; }
+                if (offsetY!=0) { transposeY = offsetY/fps/animLength; } else { transposeY=0; }
+                frameCount = fps * animLength;
+                transposeBy = [ transposeX, transposeY ]
+            }
+            if (frameCount>0) {
+                frameCount--;
+                centreX+=transposeBy[0]; centreY+=transposeBy[1];
+                animID = requestAnimationFrame(moveCameraXY);
+            } else {
+                camera = [destX, destY];
+                transposeBy = [0, 0];
+                console.log("Animation Complete. Removing animID");
+                cancelAnimationFrame(animID);
+                if (bounceBack==true && done==false) {
+                    cameraBounceBack();
+                } else if (bounceBack==true && done==true) {
+                    done = false;
+                }
+            }
+        }
+
+        function randomNumber(min,max) {
+            return Math.floor(Math.random() * (max - min - 1)) + min;
+        }
+    </script>
+</head> 
+
+<body onload="init()">
+    <canvas id='3dstars'></canvas>
+    <div id="inputTable">
+        <table cellpadding="2" cellspacing="0">
+            <tr><td class="y">🡤</td><td></td><td class="y">🡡</td><td></td><td class="y">🡥</td></tr>
+            <tr><td></td><td>7</td><td>8</td><td>9</td><td></td></tr>
+            <tr><td class="y">🡠</td><td>4</td><td>5</td><td>6</td><td class="y">🡢</td></tr>
+            <tr><td></td><td>1</td><td>2</td><td>3</td><td></td></tr>
+            <tr><td class="y">🡧</td><td></td><td class="y">🡣</td><td></td><td class="y">🡦</td></tr>
+        </table>
+    </div>
+</body>
+</html>

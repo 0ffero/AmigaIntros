@@ -1,0 +1,99 @@
+<html>
+<head>
+    <title>Amiga Demo - Square Tunnel (well, rect) HTML5 Canvas</title>
+    <style type="text/css">
+        body { background-color: black; overflow: hidden; }
+        canvas { padding: 0; margin: auto; display: block; }
+    </style>
+<body onload="init()">
+    <canvas id='squareTunnel' width='1600' height='900'></canvas>
+</body>
+
+<script type='text/javascript'>
+    // GLOBAL VARIABLES
+    var c, ctx;
+    var animID;
+    var tunnels = []; // format: box width, box height, x pos, y pos, rotation angle, y offset, translate speed
+    var tunnelDepth = 19; // this will eventually need to be calculated
+    var tunnelRatio = [ 16, 9 ];
+    var tunnelXY = [ 80, 45 ];
+    var cW, cH;
+    var enableRotation = false;
+    var rotationAngle = 0;
+
+    function generateYoffsetPath() {
+        // REM: maximum Y position for innermost rectangle = tunnelDepth + 1 in pixels
+        maxYPos = tunnelDepth + 1;
+        yOffset = tunnelXY[1] * 5;
+        for (i=0; i<tunnelDepth; i++) {
+            offsetForPush = i * 20;
+            tunnels[i][5] = 360 - offsetForPush; tunnels[i][6] = parseFloat(((360 - offsetForPush) / fps).toFixed(2));
+        }
+    }
+
+    function init() {
+        c = document.getElementById("squareTunnel");
+        cW = 1600; cH = 900;
+        c.width = cW; c.height = cH;
+        centreX = cW/2; centreY = cH/2;
+        fps = 60;
+        ctx = c.getContext("2d");
+
+        // build the tunnel array
+        for (i=1; i<=tunnelDepth; i++ ) {
+            boxW = i * tunnelXY[0];     offsetX = boxW/2;     x = centreX - offsetX;
+            boxH = i * tunnelXY[1];     offsetY = boxH/2;     y = centreY - offsetY;
+            if (enableRotation) { rotationAngle+=1; }
+            tunnels.push([ boxW, boxH, x, y, rotationAngle ]);
+        }
+
+        //animID = requestAnimationFrame(mainLoop);
+    }
+
+    function mainLoop() {
+        // update tunnel array
+        for (i=0; i<tunnels.length; i++) {
+            boxW = tunnels[i][0]; boxH = tunnels[i][1]; x = tunnels[i][2]; y = tunnels[i][3]; rotationAngle = tunnels[i][4];
+            boxW = boxW + (2 * (tunnelRatio[0]/tunnelRatio[1])); boxH+=2; x--; y--; if (enableRotation) { rotationAngle+=1; }
+            
+            if (rotationAngle==360) { rotationAngle=0; }
+            
+            if (boxW>cW || boxH>cH ) { // new size is bigger than the screen, delete it fron the array
+                boxW = tunnelXY[0];      offsetX = boxW/2;       x = centreX - offsetX;
+                boxH = tunnelXY[1];      offsetY = boxW/2;       y = centreY - offsetY;
+                if (enableRotation) { rotationAngle = tunnels[0][4] - 1; }
+                tunnels[i] = [ boxW, boxH, x, y, rotationAngle ];
+            } else {
+                tunnels[i][0] = boxW; tunnels[i][1] = boxH; tunnels[i][2] = x; tunnels[i][3] = y; tunnels[i][4] = rotationAngle;
+            }
+        }
+
+        ctx.clearRect(0, 0, cW, cH);
+        ctx.lineWidth = 5;
+        redDarkest = 1;
+        redRange = 126;
+
+        // draw tunnels
+        for (i=0; i<tunnels.length; i++) {
+            boxW = tunnels[i][0]; boxH = tunnels[i][1]; x = tunnels[i][2]; y = tunnels[i][3]; rotationAngle = tunnels[i][4];
+            currentYOffset = tunnels[i][5]; translateSpeed = tunnels[i][6];
+            distFromEdge = centreY - boxH;
+            if (distFromEdge==0) { value = 1; } else { value = redRange * (1 - (distFromEdge/500)); } // set brightness of tunnel section
+            ctx.strokeStyle = "rgb(" + (redDarkest + value) + ", 0, 0)";
+
+            ctx.save();
+                ctx.translate(centreX, centreY);
+                ctx.rotate(rotationAngle * Math.PI / 180);
+                if (tunnels[i][5]>0) {
+                    ctx.strokeRect(-boxW/2, -boxH/2-currentYOffset, boxW, boxH);
+                    tunnels[i][5] -= translateSpeed; // update offset
+                } else {
+                    ctx.strokeRect(-boxW/2, -boxH/2, boxW, boxH);
+                    tunnels[i][5] = 0;
+                }
+            ctx.restore();
+        }
+        animID = requestAnimationFrame(mainLoop)
+    }
+</script>
+</html>

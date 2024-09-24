@@ -1,0 +1,86 @@
+<html>
+<title>Amiga Intro (kind of) Water Effect (displacement map)</title>
+<head>
+    <style type="text/css">
+        body { background: black; color: #ccee99; text-align: center; }
+        h1 { color: white; }
+        #myCanvas { border: 1px solid #333; }
+        #images img { width: auto; height: auto; display: none; }
+    </style>
+</head>
+<body onload='init();'>
+    <canvas id="myCanvas" width="1024" height="573"></canvas>
+
+    <div id="images">
+        <img id="source" src="images/sand_surface.jpg" />
+        <img id="map" src="images/sand_surface_dm.png" />
+    </div>
+</body>
+
+<script type="text/javascript">
+    // Maximum distance for xy displacement offset
+    var DRIFT_RANGE = 10;
+
+    // Create/cache canvases and contexts for source image, displacement map, and output
+    var cOutput = document.getElementById('myCanvas'), cSource = document.createElement('canvas'), cMap = document.createElement('canvas'), ctxOutput = cOutput.getContext('2d'), ctxMap = cMap.getContext('2d'), ctxSource = cSource.getContext('2d'), images = document.querySelectorAll('#images img');
+    scale = 1.2; ctxOutput.scale(scale, scale);
+    // Ensure all canvases are the same size
+    var cW = cSource.width = cMap.width = cOutput.width;
+    var cH = cSource.height = cMap.height = cOutput.height;
+
+    // Refs for the image data
+    var sourceData, mapData,
+        outputData = ctxOutput.createImageData(cW, cH);
+
+    function update() {
+        var t = 0.002 * Date.now(), dx = Math.sin(t) * DRIFT_RANGE, dy = Math.cos(t * 0.5) * DRIFT_RANGE;
+
+        // Iterate the xy grid
+        // TODO: optimize this!
+        for (var y = 0; y < cH; y++) {
+            for (var x = 0; x < cW; x++) {
+
+                // the displacement goes from 0 (black) to 1 (white), offset is then calculated
+                var pix = y * cW + x, arrayPos = pix * 4, depth = mapData[arrayPos] / 255;
+                var ofs_x = Math.round(x + (dx * depth)), ofs_y = Math.round(y + (dy * depth));
+
+                // Clamp offset to canvas dimensions
+                if (ofs_x < 0) ofs_x = 0;
+                if (ofs_x > cW - 1) ofs_x = cW - 1;
+                if (ofs_y < 0) ofs_y = 0;
+                if (ofs_y > cH - 1) ofs_y = cH - 1;
+
+                //transpose original image and raw
+                var targetPix = ofs_y * cW + ofs_x, targetPos = targetPix * 4;
+                outputData.data[arrayPos] = sourceData[targetPos];
+                outputData.data[arrayPos + 1] = sourceData[targetPos + 1];
+                outputData.data[arrayPos + 2] = sourceData[targetPos + 2];
+                outputData.data[arrayPos + 3] = sourceData[targetPos + 3];
+            }
+        }
+    }
+
+    function render() {
+        ctxOutput.putImageData(outputData, 0, 0);
+    }
+
+    function mainloop() {
+        requestAnimationFrame(mainloop);
+        update();
+        render();
+    }
+
+    function init() {
+        var sourceImg = images[0],
+        mapImg = images[1];
+        ctxSource.drawImage(sourceImg, 0, 0);
+        sourceData = ctxSource.getImageData(0, 0, cW, cH).data;
+        ctxMap.drawImage(mapImg, 0, 0);
+        mapData = ctxMap.getImageData(0, 0, cW, cH).data;
+
+        mainloop();
+    }
+
+</script>
+
+</html>

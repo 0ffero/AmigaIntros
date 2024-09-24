@@ -1,0 +1,35 @@
+<html>
+<head>
+    <title>Amiga Demo - HTML5 Canvas</title>
+    <style type="text/css">
+        body { background-color: black; }
+        canvas { padding: 0; margin: auto; display: block; }
+    </style>
+</head>
+<body onload="init()">
+    <canvas id='canvasName' width='1600' height='900'></canvas>
+</body>
+
+<script type='text/javascript'>
+    // GLOBAL VARIABLES
+    var c, ctx, cW, cH, centreX, centreY;
+    var animID;
+
+    function init() {
+        c = document.getElementById("canvasName");
+        ctx = c.getContext("2d");
+        cW = c.width; cH = c.height;
+        centreX = cW/2; centreY = cH/2;
+
+        // initialise required arrays
+
+        
+        // animate
+        requestAnimationFrame(mainLoop)
+    }
+
+    function mainLoop() {
+
+    }
+</script>
+</html>

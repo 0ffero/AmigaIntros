@@ -1,0 +1,188 @@
+<html>
+<head>
+    <title>Amiga Demo - HTML5 Canvas</title>
+    <style type="text/css">
+        body { background-color: black; }
+        canvas { padding: 0; margin: auto; display: block; border: 1px solid white; }
+    </style>
+</head>
+<body onload="init()" onkeypress="keyPressed(event)">
+    <canvas id='pong' width='1600' height='900'></canvas>
+</body>
+
+<script type='text/javascript'>
+    // GLOBAL VARIABLES
+    var c, ctx, cW, cH, centreX, centreY;
+    var animID;
+
+    // bat vars
+    var playerBats = [];
+    var batMaxYSpeed = 20;
+    var velY=0, yAcceleration = 10, friction = 0.95; // value is a multiplier ie actual friction is 1 - friction value, or 5%
+    var maxYpos;
+
+    // ball vars
+    var ball = [];
+    var ballRadius = 15;
+    var ballHitCounter = 0;
+    var ballXVel = 0;
+    var ballXPos, ballYPos;
+    var ballDirection = 1; // 1 for right -1 for left
+    var ballYVel = 0;
+    var ballAccel = 1;
+    var ballMaxSpeed = 10; // ball will speed up based on current hit counter (ie how many times has the ball been hit since a loss)
+    
+    function detectCollision() {
+        if (ballDirection==-1) {
+            y = parseInt(playerBats[0][1]);
+            if (ballYPos > y && ballYPos < y + batHeight) { // the ball hit the bat
+                ballDirection=1;
+                getBatHitPosition();
+            }
+        } else {
+            ballDirection=-1;
+        }
+    }
+
+    function getBatHitPosition() {
+        // direction of ball depends on where it hits the bat
+        // bat is split into 7 sections
+        // ╔╗ section1: x=1, y=-2
+        // ║║ section2: x=1, y=-1
+        // ║║ section3: x=1, y=-0.5
+        // ║║ section4: x=1, y=0 (middle of bat)
+        // ║║ section5: x=1, y=0.5
+        // ║║ section6: x=1, y=1
+        // ╚╝ section7: x=1, y=2
+        y = playerBats[0][1];
+        batSectionSize =  batHeight / 7;
+        yOffset = Math.floor((ballYPos - y)/batSectionSize) + 1;
+        
+        switch (yOffset) {
+            case 1: ballYVel = -2;   break;
+            case 2: ballYVel = -1;   break;
+            case 3: ballYVel = -0.5; break;
+            case 4: ballYVel = 0;    break;
+            case 5: ballYVel = 0.5;  break;
+            case 6: ballYVel = 1;    break;
+            case 7: ballYVel = 2;    break;
+        }
+        console.log("y: " + y + " batSectSize: " + batSectionSize + " ballYPos: " + ballYPos + " yOff: " + yOffset + " ballYVel:" + ballYVel);
+    }
+
+    function increaseBallSpeed() {
+        ballMaxSpeed = ballMaxSpeed + (0.2);
+    }
+
+    function init() {
+        c = document.getElementById("pong");
+        cW = c.width; cH = c.height;
+
+        ctx = c.getContext("2d");
+        
+        centreX = cW/2; centreY = cH/2;
+        batWidth = 20; batHeight = cH/7;
+        maxYpos = (cH-10)-batHeight;
+
+        // initialise required arrays
+        yPos = centreY-(batHeight/2);
+        playerBats.push([10, yPos, batWidth, batHeight], [(cW-batWidth-10),yPos,batWidth,batHeight]); // x,y,w,h
+        
+        // draw the bats
+        ctx.fillStyle = 'white';
+        for (i=0; i<playerBats.length; i++) {
+            x = playerBats[i][0]; y = playerBats[i][1];
+            w = playerBats[i][2]; h = playerBats[i][3];
+            ctx.fillRect(x, y, w, h);
+        }
+
+        //draw the ball
+        ballXPos = centreX; ballYPos = centreY;
+        ctx.arc(ballXPos, ballYPos, ballRadius, 0, 2 * Math.PI);
+
+        
+        // animate
+        requestAnimationFrame(mainLoop)
+    }
+
+    function mainLoop() {
+        ctx.clearRect(0,0,cW,cH);
+        
+        // move the bat
+        velY = velY * friction;
+        playerBats[0][1]+=velY;
+        if (playerBats[0][1] <10) { playerBats[0][1]=10; velY=0; }
+        if (playerBats[0][1] >maxYpos) { playerBats[0][1]=maxYpos; velY=0; }
+
+        // move the ball
+        if (ballDirection == 1) { // moving right
+            if (ballXPos < cW-10-batWidth-(ballRadius/2)-10) {
+                
+            } else {
+                detectCollision();
+            }
+        } else { // moving left
+            if (ballXPos > 10 + batWidth + (ballRadius/2)+10) {
+                
+            } else {
+                detectCollision();
+            }
+        }
+        if ((ballYPos - (ballRadius/2))<=0 || (ballYPos + (ballRadius/2))>=cH) {
+            ballYVel=-ballYVel;
+            //console.log("Swapping Y direction");
+        }
+        ballYPos +=ballYVel*ballMaxSpeed;
+        ballXPos +=ballMaxSpeed*ballDirection;
+
+        // move computer bat (simply tracks the ball just now ie you cant win yet)
+        if (ballDirection==1) {
+            playerBats[1][1] = ballYPos - (batHeight/2);
+            if (playerBats[1][1] <10) { playerBats[1][1]=10; velY=0; }
+            if (playerBats[1][1] >maxYpos) { playerBats[1][1]=maxYpos; velY=0; }
+        }
+
+        // draw bats
+        ctx.fillStyle = 'white';
+        for (i=0; i<playerBats.length; i++) {
+            x = playerBats[i][0]; y = playerBats[i][1];
+            w = playerBats[i][2]; h = playerBats[i][3];
+            ctx.fillRect(x, y, w, h);
+        }
+
+        // draw ball
+        colour = 'rgb(255,255,255)';
+        ctx.beginPath();
+        ctx.arc(ballXPos, ballYPos, ballRadius, 0, 2 * Math.PI);
+        ctx.strokeStyle = colour;
+        ctx.stroke();
+        ctx.fill();
+
+        requestAnimationFrame(mainLoop);
+    }
+
+    function keyPressed(event) {
+        switch (event.key.toLowerCase()) {
+            case 'q': case 'a':
+                moveBat(event.key); break;
+            case ' ': startGame();
+        }
+    }
+
+    function moveBat(key) {
+        y = playerBats[0][1];
+        if (key=='q') {
+            if (velY > -batMaxYSpeed) { velY-=yAcceleration; }
+            if (velY > 0) { velY=0-yAcceleration; }
+        }
+        if (key=='a') {
+            if (velY <  batMaxYSpeed) { velY+=yAcceleration; }
+            if (velY < 0) { velY=0+yAcceleration; }
+        }
+    }
+
+    function startGame() {
+        ballXVel = 1;
+    }
+</script>
+</html>

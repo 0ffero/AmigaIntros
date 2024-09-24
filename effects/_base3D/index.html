@@ -1,0 +1,44 @@
+<html>
+<head>
+    <title>3DGL Base</title>
+    <script src="js/frameworks/three.min.js"></script>
+    <script src="js/frameworks/howler.min.js"></script>
+    <script src="js/frameworks/howler.spatial.js"></script>
+
+    <script src="js/playerInput.js"></script>
+    <script src="js/scene.js"></script>
+    <script src="js/sound.js"></script>
+    <script src="js/animate.js"></script>
+
+    <style type="text/css">
+        * { margin: 0; padding: 0; }
+        body { background-color: black; }
+        canvas { padding: 0; margin: auto; display: block; }
+        #infoContainer { width: 500px; padding: 3px 3px; margin: 0px 4px; background-color: black; font-size: 18px; font-weight: bold; color: white; border: 1px solid white; position: absolute; text-align: center; opacity: 0.1; }
+    </style>
+</head>
+<body>
+    <div id="infoContainer">Press <span style="color: yellow">S</span> to switch sound ON and OFF</div>
+</body>
+
+<script type="text/javascript">
+
+document.addEventListener('keydown', playerInput);
+infoC = document.getElementById('infoContainer');
+infoC.style.left = (window.innerWidth / 2) - (0.5 * infoC.offsetWidth);
+
+var globals = {
+    multiplier: 100,
+    soundsEnabled: false,
+    realisticLighting: true,
+    rendererW: window.innerWidth,
+    rendererH: window.innerHeight,
+    fov: 25,
+}
+
+sceneMain = new scene();
+requestAnimationFrame(animate);
+
+</script>
+
+</html>

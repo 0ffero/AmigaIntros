@@ -1,0 +1,159 @@
+<html>
+<head>
+    <title>Amiga Demo Terrain - HTML5 Canvas</title>
+    <style type="text/css">
+        * { margin: 0px auto; overflow: hidden; }
+        body { background-color: black; }
+        canvas { padding: 0; margin: auto; display: block; }
+    </style>
+    <script src='../../js/protos.js'></script>
+</head>
+<body>
+    <!--<canvas id='terrain' width='1600' height='900'></canvas>-->
+</body>
+
+
+<script type='text/javascript'>
+    /*
+    // GLOBAL VARIABLES
+    var c, ctx, cW, cH, centreX, centreY;
+    var animID;
+    var sinArray=[]; var xOffset=0; var camOffsetY;
+    var dotRadius = 3;
+    var zOffset = 16;
+    var fov = 300;
+
+    function init() {
+        c = document.getElementById("terrain");
+        ctx = c.getContext("2d");
+        cW = c.width; cH = c.height;
+        centreX = cW/2; centreY = cH/2;
+
+        // initialise required arrays
+        loopLength = 1080;
+        for (i=1; i<=loopLength; i+=6) {
+            cosR = Math.sin(i * (Math.PI/180)).toFixed(2);
+			newHeight = 50 * cosR + 50;
+            sinArray.push(newHeight);
+        }
+        xOffset = ~~cW/sinArray.length;
+        camOffsetY = cH/3;
+        
+        // animate
+        requestAnimationFrame(mainLoop);
+    }
+
+    function mainLoop() {
+        ctx.fillStyle =ctx.strokeStyle = 'green';
+        for (prop in sinArray) {
+            x = prop * xOffset; y = sinArray[prop];
+            ctx.beginPath();
+            ctx.arc(x, y+camOffsetY, dotRadius, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.fill();
+        }
+    }
+    */
+</script>
+</html>
+
+<script type="text/javascript">
+
+function generateCLUT() {
+    for (colorAngle=0; colorAngle<360; colorAngle++) {
+        colorArray = HSL2RGB(colorAngle,100,50);
+        CLUT.push(colorArray);
+    }
+}
+
+var canvas = document.createElement("canvas");
+var cW = canvas.width = window.innerWidth;
+var cH = canvas.height = window.innerHeight;
+var centreX = cW/2; var centreY = cH/2;
+var fov = 500/2; // max pixel distance range is -250 to 250
+var fps = 60;
+var pixelY = 0;
+
+var CLUT=[];
+generateCLUT();
+var currentColor = Number.round(Math.random()*360);
+var colourSpaces = ['normal', 'psychX', 'psychY'];
+var pixelDensity = [5, 10, 10];
+var build = 'x'; // x or z
+var selectedColourSpace = 0;
+var colourSpace = colourSpaces[selectedColourSpace];
+var colourTimeoutMax = colourTimeout = fps/30; // change colour every x frames
+var alpha = 255;
+
+var pixelOffset = 5;
+var cameraHeight = 60;
+
+var ctx = canvas.getContext("2d");
+document.body.appendChild(canvas);
+
+var pixels = [];
+if (build=='z') {
+    for(var z = -fov; z < fov; z+=pixelDensity[selectedColourSpace]) {
+        for(var x = -fov; x < fov; x+=pixelDensity[selectedColourSpace]) {
+            if (x>-40 && x<40) { pixelY = 50; } else { pixelY = 0; }
+            pixels.push({x: x, y: cameraHeight+pixelY, z: z});
+        }
+    }
+} else if (build=='x') {
+    for(var x = -fov; x < fov; x+=pixelDensity[selectedColourSpace]) {
+        if (x>-40 && x<40) { pixelY = 40+x*(Math.sign(x)/-1)+1; } else { pixelY = 0; }
+        for(var z = -fov; z < fov; z+=pixelDensity[selectedColourSpace]) {
+            pixels.push({x: x, y: cameraHeight+pixelY, z: z});
+        }
+    }
+} else {
+    throw new Error('\n\nTerrain App Error:\nInvalid vector, unable to build pixel array\nIf the console says this in uncaught... well its talking boz.\nExecution Halted.');
+}
+
+//time to draw the pixels
+function render() {
+	ctx.clearRect(0,0,cW,cH);
+	//grabbing a screenshot of the canvas using getImageData
+	var imagedata = ctx.getImageData(0,0,cW,cH);
+	//looping through all pixel points
+    var layer = pixels.length;
+    rgbA = CLUT[currentColor];
+    if (colourSpace=='normal') {
+        if (colourTimeout==0) { colourTimeout = colourTimeoutMax; getNextColour(); } else { colourTimeout--; }
+    }
+	while(layer--) {
+		var pixel = pixels[layer];
+		// fov = sets the max distance from the screen
+		// scale sets the distance between particles (closer to screen = largest distance apart)
+		var scale = fov/(fov+pixel.z);
+		var x2d = pixel.x * scale + centreX;
+        var y2d = pixel.y * scale + centreY;
+        if (colourSpace=='psychX' || colourSpace=='psychY') { // psychY will be done elsewhere, but this is here as a catch all for the colourSpace options
+            rgbA = CLUT[currentColor];
+            getNextColour();
+        }
+
+		// paints the star to imagedata if its on screen
+		if(x2d >= 0 && x2d <= cW && y2d >= 0 && y2d <= cH) {
+			// loop through canvas points   note: imagedata splits each coord into 4 (r,g,b,a)
+			xy = (Number.round(y2d) * imagedata.width + Number.round(x2d))*4;
+			imagedata.data[xy] = rgbA.RGB.r;
+			imagedata.data[xy+1] = rgbA.RGB.g;
+			imagedata.data[xy+2] = rgbA.RGB.b;
+			imagedata.data[xy+3] = alpha;
+		}
+		pixel.z--;
+		if(pixel.z < -fov) pixel.z += 2*fov;
+	}
+	ctx.putImageData(imagedata, 0, 0);
+}
+
+//animation time
+setInterval(render, 1000/fps);
+//render();
+
+function getNextColour() {
+    if (currentColor+1>=CLUT.length) { currentColor=0; } else { currentColor++; }
+}
+
+</script>
